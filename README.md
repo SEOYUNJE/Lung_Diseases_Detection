@@ -56,7 +56,8 @@ There are 9classes(8 diseases, and one for "No Findings")
 ![box2](https://github.com/user-attachments/assets/f7d37c96-2f55-4140-a21c-6ea1fd474026)
 
 ## Labeling
-![pseudo labeling](https://github.com/user-attachments/assets/df3e96f4-354b-401f-a91b-cfd5bdc75776)
+![de](https://github.com/user-attachments/assets/83a33f6a-9b26-4ef5-8ef4-3b730ca05b17)
+
 
 
 
