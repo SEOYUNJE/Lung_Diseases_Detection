@@ -61,10 +61,21 @@ There are 9classes(8 diseases, and one for "No Findings")
 
 ## Bbox Dataset 
 
-<Prepared Bbox Dataset> 
+#### Prepared Bbox Dataset
+  
 1. [NIH Chest X-rays](https://www.kaggle.com/datasets/nih-chest-xrays/data)
+- Atelectasis(180)
+- Effusion(153)
+- Cardiomegaly(146)
+- Pneumonia(120)
 
 2. [VinBigData](https://www.kaggle.com/competitions/vinbigdata-chest-xray-abnormalities-detection/data)
+- Atelectasis(279)
+- Effusion(2476)
+- Cardiomegaly(5427)
+- Pneumonia(0)
 
+#### Bbox Dataset X
 
+We'll gonna make bbox from https://www.kaggle.com/datasets/seoyunje/bbox-with-labelme With LabelMe Tool
 
