@@ -3,7 +3,7 @@
 
 ### How to use Label Me?
 
-Step1. Install labelme in `Anaconda Prompt`
+#### Step1. Install labelme in `Anaconda Prompt`
 
 `conda create --name=labelme python=3.6`
 
@@ -15,8 +15,11 @@ Step1. Install labelme in `Anaconda Prompt`
 
 ![melabel](https://github.com/user-attachments/assets/3b9cd05b-868f-4206-b409-09209d6302dd)
 
-Step2. 다시 실행할 시
+#### Step2. 다시 실행할 시
 
 `conda activate labelme`
 
 `labelme`
+
+#### Step3. Labeling with Labelme
+![covid12](https://github.com/user-attachments/assets/588d1871-d347-4d04-b219-ba7d648ff5ae)
