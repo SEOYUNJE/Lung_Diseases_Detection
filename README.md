@@ -59,6 +59,12 @@ There are 9classes(8 diseases, and one for "No Findings")
 ![de](https://github.com/user-attachments/assets/83a33f6a-9b26-4ef5-8ef4-3b730ca05b17)
 
 
+## Bbox Dataset 
+
+<Prepared Bbox Dataset> 
+1. [NIH Chest X-rays](https://www.kaggle.com/datasets/nih-chest-xrays/data)
+
+2. [VinBigData](https://www.kaggle.com/competitions/vinbigdata-chest-xray-abnormalities-detection/data)
 
 
 
