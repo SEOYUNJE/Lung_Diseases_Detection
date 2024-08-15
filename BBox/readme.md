@@ -8,6 +8,8 @@
 
 - `Cardiomegaly(146)`
 
+___
+
 **2. VinBig Data**
 
 - `Atelectasis(279)`
@@ -20,11 +22,22 @@ There are 10 Radiologist in dataframe like below.
 
 ![rad](https://github.com/user-attachments/assets/eba67e2e-4c9d-4ba0-99cc-44ee84425559)
 
+#### => After Fusion BBox
+
+ - `Atelectasis`: 279 -> 123
+
+- `Effusion`: 2476 -> 824
+
+- `Cardiomegaly`: 5427 -> 2113
+
+
+___
+
 **Final Dataset**
 
-- `Atelectasis(459)`
+- `Atelectasis(303)`
 
-  => Vin(279) + NIH(180)
+  => Vin(123) + NIH(180)
 
 - `Effusion(500)`
 
