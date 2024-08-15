@@ -1,6 +1,11 @@
 ### Dataset
 => https://www.kaggle.com/datasets/seoyunje/bbox-with-labelme
 
+- Edema(500)
+- Tuberculosis(500)
+- Emphysema(500)
+- Covid(500)
+
 ### How to use Label Me?
 
 #### Step1. Install labelme in `Anaconda Prompt`
