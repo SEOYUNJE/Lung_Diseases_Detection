@@ -5,6 +5,7 @@
 - Tuberculosis(500)
 - Emphysema(500)
 - Covid(500)
+- Pneumonia(500)
 
 ### How to use Label Me?
 
