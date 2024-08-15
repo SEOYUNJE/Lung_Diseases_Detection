@@ -1,6 +1,10 @@
 ### Dataset
 => https://www.kaggle.com/datasets/seoyunje/bbox-with-labelme
 
+
+![cxr- metadata](https://github.com/user-attachments/assets/64458dec-2942-40fb-bbf3-3089ade8c26a)
+
+
 - Edema(500)
 - Tuberculosis(500)
 - Emphysema(500)
