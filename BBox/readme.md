@@ -22,10 +22,6 @@ There are 10 Radiologist in dataframe like below.
 
 ![rad](https://github.com/user-attachments/assets/eba67e2e-4c9d-4ba0-99cc-44ee84425559)
 
-So We need to apply Weighted Box Fusion(WBF) 
-
-![image](https://github.com/user-attachments/assets/46ab3a42-c31e-409a-b872-c1a03bd4dbe6)
-
 
 #### => After Choose One Radiologist for each label
 
