@@ -1,0 +1,924 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "7ab1e095",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:11:54.035777Z",
+     "iopub.status.busy": "2024-08-15T03:11:54.035384Z",
+     "iopub.status.idle": "2024-08-15T03:11:57.010561Z",
+     "shell.execute_reply": "2024-08-15T03:11:57.009422Z"
+    },
+    "papermill": {
+     "duration": 2.985784,
+     "end_time": "2024-08-15T03:11:57.013466",
+     "exception": false,
+     "start_time": "2024-08-15T03:11:54.027682",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import gc \n",
+    "import ctypes\n",
+    "import random\n",
+    "from tqdm import tqdm\n",
+    "from collections import defaultdict\n",
+    "\n",
+    "import os\n",
+    "import sys\n",
+    "import pickle\n",
+    "\n",
+    "import numpy as np, pandas as pd\n",
+    "import matplotlib.pyplot as plt\n",
+    "import seaborn as sns\n",
+    "\n",
+    "from glob import glob\n",
+    "import cv2\n",
+    "from PIL import Image\n",
+    "\n",
+    "import warnings \n",
+    "warnings.filterwarnings('ignore')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "e796a423",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:11:57.028149Z",
+     "iopub.status.busy": "2024-08-15T03:11:57.027566Z",
+     "iopub.status.idle": "2024-08-15T03:11:57.442086Z",
+     "shell.execute_reply": "2024-08-15T03:11:57.440991Z"
+    },
+    "papermill": {
+     "duration": 0.424412,
+     "end_time": "2024-08-15T03:11:57.444545",
+     "exception": false,
+     "start_time": "2024-08-15T03:11:57.020133",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Shape of DataFrame: (112120, 11)\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Image Index</th>\n",
+       "      <th>Finding Labels</th>\n",
+       "      <th>Follow-up #</th>\n",
+       "      <th>Patient ID</th>\n",
+       "      <th>Patient Age</th>\n",
+       "      <th>Patient Gender</th>\n",
+       "      <th>View Position</th>\n",
+       "      <th>OriginalImage[Width</th>\n",
+       "      <th>Height]</th>\n",
+       "      <th>OriginalImagePixelSpacing[x</th>\n",
+       "      <th>y]</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>00000001_000.png</td>\n",
+       "      <td>Cardiomegaly</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>58</td>\n",
+       "      <td>M</td>\n",
+       "      <td>PA</td>\n",
+       "      <td>2682</td>\n",
+       "      <td>2749</td>\n",
+       "      <td>0.143</td>\n",
+       "      <td>0.143</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>00000001_001.png</td>\n",
+       "      <td>Cardiomegaly|Emphysema</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>58</td>\n",
+       "      <td>M</td>\n",
+       "      <td>PA</td>\n",
+       "      <td>2894</td>\n",
+       "      <td>2729</td>\n",
+       "      <td>0.143</td>\n",
+       "      <td>0.143</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>00000001_002.png</td>\n",
+       "      <td>Cardiomegaly|Effusion</td>\n",
+       "      <td>2</td>\n",
+       "      <td>1</td>\n",
+       "      <td>58</td>\n",
+       "      <td>M</td>\n",
+       "      <td>PA</td>\n",
+       "      <td>2500</td>\n",
+       "      <td>2048</td>\n",
+       "      <td>0.168</td>\n",
+       "      <td>0.168</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>00000002_000.png</td>\n",
+       "      <td>No Finding</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>81</td>\n",
+       "      <td>M</td>\n",
+       "      <td>PA</td>\n",
+       "      <td>2500</td>\n",
+       "      <td>2048</td>\n",
+       "      <td>0.171</td>\n",
+       "      <td>0.171</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>00000003_000.png</td>\n",
+       "      <td>Hernia</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>81</td>\n",
+       "      <td>F</td>\n",
+       "      <td>PA</td>\n",
+       "      <td>2582</td>\n",
+       "      <td>2991</td>\n",
+       "      <td>0.143</td>\n",
+       "      <td>0.143</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "        Image Index          Finding Labels  Follow-up #  Patient ID  \\\n",
+       "0  00000001_000.png            Cardiomegaly            0           1   \n",
+       "1  00000001_001.png  Cardiomegaly|Emphysema            1           1   \n",
+       "2  00000001_002.png   Cardiomegaly|Effusion            2           1   \n",
+       "3  00000002_000.png              No Finding            0           2   \n",
+       "4  00000003_000.png                  Hernia            0           3   \n",
+       "\n",
+       "   Patient Age Patient Gender View Position  OriginalImage[Width  Height]  \\\n",
+       "0           58              M            PA                 2682     2749   \n",
+       "1           58              M            PA                 2894     2729   \n",
+       "2           58              M            PA                 2500     2048   \n",
+       "3           81              M            PA                 2500     2048   \n",
+       "4           81              F            PA                 2582     2991   \n",
+       "\n",
+       "   OriginalImagePixelSpacing[x     y]  \n",
+       "0                        0.143  0.143  \n",
+       "1                        0.143  0.143  \n",
+       "2                        0.168  0.168  \n",
+       "3                        0.171  0.171  \n",
+       "4                        0.143  0.143  "
+      ]
+     },
+     "execution_count": 2,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df = pd.read_csv('/kaggle/input/data/Data_Entry_2017.csv')\n",
+    "df = df.drop(columns='Unnamed: 11')\n",
+    "print(f'Shape of DataFrame: {df.shape}')\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "b1e6749b",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:11:57.458615Z",
+     "iopub.status.busy": "2024-08-15T03:11:57.458223Z",
+     "iopub.status.idle": "2024-08-15T03:12:01.198992Z",
+     "shell.execute_reply": "2024-08-15T03:12:01.197589Z"
+    },
+    "papermill": {
+     "duration": 3.750997,
+     "end_time": "2024-08-15T03:12:01.201682",
+     "exception": false,
+     "start_time": "2024-08-15T03:11:57.450685",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "CPU times: user 685 ms, sys: 144 ms, total: 829 ms\n",
+      "Wall time: 3.73 s\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%time\n",
+    "tmp = {os.path.basename(x): x for x in glob(os.path.join('/kaggle', 'input', '*','*','images', '*.png'))}    \n",
+    "    \n",
+    "df['path'] = df['Image Index'].map(tmp)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "6ba39dbc",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:12:01.216049Z",
+     "iopub.status.busy": "2024-08-15T03:12:01.215636Z",
+     "iopub.status.idle": "2024-08-15T03:12:01.295200Z",
+     "shell.execute_reply": "2024-08-15T03:12:01.294158Z"
+    },
+    "papermill": {
+     "duration": 0.089975,
+     "end_time": "2024-08-15T03:12:01.298049",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:01.208074",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df = df[~df['Finding Labels'].str.contains('\\|')]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "3ac921a5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:12:01.312310Z",
+     "iopub.status.busy": "2024-08-15T03:12:01.311923Z",
+     "iopub.status.idle": "2024-08-15T03:12:01.759266Z",
+     "shell.execute_reply": "2024-08-15T03:12:01.758132Z"
+    },
+    "papermill": {
+     "duration": 0.457715,
+     "end_time": "2024-08-15T03:12:01.762095",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:01.304380",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df_pneumonia = pd.DataFrame()\n",
+    "df_pneumonia['Image Index'] = os.listdir('/kaggle/input/chest-xray-pneumonia/chest_xray/train/PNEUMONIA/')\n",
+    "df_pneumonia['Finding Labels'] = 'Pneumonia'\n",
+    "\n",
+    "tmp = {os.path.basename(x): x for x in glob(os.path.join('/kaggle', 'input', '*','*','train','*','*.jpeg'))}        \n",
+    "df_pneumonia['path'] = df_pneumonia['Image Index'].map(tmp)\n",
+    "\n",
+    "df = pd.concat([df, df_pneumonia])\n",
+    "df = df.reset_index(drop=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "f6a6bff7",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:12:01.776283Z",
+     "iopub.status.busy": "2024-08-15T03:12:01.775910Z",
+     "iopub.status.idle": "2024-08-15T03:12:03.728210Z",
+     "shell.execute_reply": "2024-08-15T03:12:03.726998Z"
+    },
+    "papermill": {
+     "duration": 1.962825,
+     "end_time": "2024-08-15T03:12:03.731185",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:01.768360",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df_tuberculosis = pd.DataFrame()\n",
+    "df_tuberculosis['Image Index'] = os.listdir('/kaggle/input/tuberculosis-tb-chest-xray-dataset/TB_Chest_Radiography_Database/Tuberculosis/')\n",
+    "df_tuberculosis['Finding Labels'] = 'Tuberculosis'\n",
+    "\n",
+    "tmp = {os.path.basename(x): x for x in glob(os.path.join('/kaggle', 'input', '*','*','*','*.png'))}        \n",
+    "df_tuberculosis['path'] = df_tuberculosis['Image Index'].map(tmp)\n",
+    "\n",
+    "df = pd.concat([df, df_tuberculosis])\n",
+    "df = df.reset_index(drop=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "ccba4ad3",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:12:03.745510Z",
+     "iopub.status.busy": "2024-08-15T03:12:03.745099Z",
+     "iopub.status.idle": "2024-08-15T03:12:04.121782Z",
+     "shell.execute_reply": "2024-08-15T03:12:04.120885Z"
+    },
+    "papermill": {
+     "duration": 0.387001,
+     "end_time": "2024-08-15T03:12:04.124515",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:03.737514",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "train_covid = pd.DataFrame()\n",
+    "train_covid['Image Index'] = os.listdir('/kaggle/input/chest-xray-pneumoniacovid19tuberculosis/train/COVID19/')\n",
+    "test_covid = pd.DataFrame()\n",
+    "test_covid['Image Index'] = os.listdir('/kaggle/input/chest-xray-pneumoniacovid19tuberculosis/test/COVID19/')\n",
+    "df_covid = pd.concat([train_covid, test_covid])\n",
+    "df_covid['Finding Labels'] = 'Covid'\n",
+    "\n",
+    "tmp = {os.path.basename(x): x for x in glob(os.path.join('/kaggle', 'input', '*','*','*','*.jpg'))}        \n",
+    "df_covid['path'] = df_covid['Image Index'].map(tmp)\n",
+    "\n",
+    "df = pd.concat([df, df_covid])\n",
+    "df = df.reset_index(drop=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "5aa10641",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:12:04.138551Z",
+     "iopub.status.busy": "2024-08-15T03:12:04.138178Z",
+     "iopub.status.idle": "2024-08-15T03:12:04.262422Z",
+     "shell.execute_reply": "2024-08-15T03:12:04.261248Z"
+    },
+    "papermill": {
+     "duration": 0.134541,
+     "end_time": "2024-08-15T03:12:04.265192",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:04.130651",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df_1 = pd.concat([df[df['Finding Labels'] == 'Edema'].sample(500, random_state=42)])\n",
+    "df_2 = pd.concat([df[df['Finding Labels'] == 'Tuberculosis'].sample(500, random_state=42)])\n",
+    "df_3 = pd.concat([df[df['Finding Labels'] == 'Emphysema'].sample(500, random_state=42)])\n",
+    "df_4 = pd.concat([df[df['Finding Labels'] == 'Covid'].sample(500, random_state=42)])\n",
+    "df_5 = pd.concat([df[df['Finding Labels'] == 'Pneumonia'].sample(500, random_state=42)])\n",
+    "\n",
+    "df = pd.concat([df_1,df_2,df_3,df_4, df_5])\n",
+    "df = df.reset_index(drop=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "1640b7f8",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:12:04.279427Z",
+     "iopub.status.busy": "2024-08-15T03:12:04.279025Z",
+     "iopub.status.idle": "2024-08-15T03:12:04.625841Z",
+     "shell.execute_reply": "2024-08-15T03:12:04.624739Z"
+    },
+    "papermill": {
+     "duration": 0.357005,
+     "end_time": "2024-08-15T03:12:04.628430",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:04.271425",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "image/png": "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nCgFAAAAQOFEKQAAAAAKJ0oBAAAAULh6jVI333xzunfvnqqqqlRVVaWmpia//vWvy+uXLl2aIUOGpG3btmnRokX69++f+fPn19nGnDlzcvTRR6dZs2Zp165dLrzwwqxcubLoQwEAAABgA9RrlNpxxx3z/e9/PzNmzMjvf//79OrVK8cee2xefvnlJMl5552Xhx56KPfdd18mT56cN998M/369Ss/ftWqVTn66KOzfPnyPPPMM/npT3+a8ePH59JLL62vQwIAAADgY2hUnzvv27dvnftXXnllbr755kybNi077rhj7rjjjtx1113p1atXkmTcuHHp0qVLpk2blgMPPDBPPPFEZs6cmSeffDLV1dXZa6+9csUVV2T48OG5/PLL07hx4/o4LAAAAAA+whZzTalVq1blnnvuyXvvvZeamprMmDEjK1asSO/evctj9thjj3Tq1ClTp05NkkydOjXdunVLdXV1eUyfPn2yePHi8qetAAAAANjy1OsnpZLkpZdeSk1NTZYuXZoWLVrkgQceSNeuXfPCCy+kcePGad26dZ3x1dXVqa2tTZLU1tbWCVJr1q9Ztz7Lli3LsmXLyvcXL168mY4GAAAAgI+j3j8ptfvuu+eFF17I9OnTM3jw4AwcODAzZ878RPc5evTotGrVqnzr2LHjJ7o/AAAAAOqq9yjVuHHj7LLLLtl3330zevTo9OjRIzfccEPat2+f5cuXZ+HChXXGz58/P+3bt0+StG/ffq1f41tzf82YdRkxYkQWLVpUvs2dO3fzHhQAAAAAH6reo9S/Wr16dZYtW5Z9990322yzTSZOnFheN3v27MyZMyc1NTVJkpqamrz00ktZsGBBecyECRNSVVWVrl27rncflZWVqaqqqnMDAAAAoDj1ek2pESNG5Mgjj0ynTp3y7rvv5q677sqkSZPy+OOPp1WrVhk0aFCGDRuWNm3apKqqKuecc05qampy4IEHJkkOP/zwdO3aNaeeemquvvrq1NbW5uKLL86QIUNSWVlZn4cGAAAAwIeo1yi1YMGCnHbaaZk3b15atWqV7t275/HHH89XvvKVJMmYMWPSoEGD9O/fP8uWLUufPn1y0003lR/fsGHDPPzwwxk8eHBqamrSvHnzDBw4MKNGjaqvQwIAAADgY6jXKHXHHXd86PomTZpk7NixGTt27HrHdO7cOY8++ujmnhoAAAAAn6At7ppSAAAAAGz9RCkAAAAACidKAQAAAFA4UQoAAACAwolSAAAAABROlAIAAACgcKIUAAAAAIUTpQAAAAAonCgFAAAAQOFEKQAAAAAKJ0oBAAAAUDhRCgAAAIDCiVIAAAAAFE6UAgAAAKBwGxWlevXqlYULF661fPHixenVq9emzgkAAACArdxGRalJkyZl+fLlay1funRpfvvb327ypAAAAADYujXakMF//OMfy3+eOXNmamtry/dXrVqVxx57LJ/5zGc23+wAAAAA2CptUJTaa6+9UlFRkYqKinV+Ta9p06a58cYbN9vkAAAAANg6bVCUev3111MqlbLzzjvn2Wefzfbbb19e17hx47Rr1y4NGzbc7JMEAAAAYOuyQVGqc+fOSZLVq1d/IpMBAAAA4NNhg6LUB73yyit56qmnsmDBgrUi1aWXXrrJEwMAAABg67VRUer222/P4MGDs91226V9+/apqKgor6uoqBClAAAAAPhQGxWlvve97+XKK6/M8OHDN/d8AAAAAPgUaLAxD/r73/+eE044YXPPBQAAAIBPiY2KUieccEKeeOKJzT0XAAAAAD4lNurre7vssksuueSSTJs2Ld26dcs222xTZ/255567WSYHAAAAwNZpo6LUbbfdlhYtWmTy5MmZPHlynXUVFRWiFAAAAAAfaqOi1Ouvv7655wEAAADAp8hGXVMKAAAAADbFRn1S6owzzvjQ9T/5yU82ajIAAAAAfDpsVJT6+9//Xuf+ihUr8qc//SkLFy5Mr169NsvEAAAAANh6bVSUeuCBB9Zatnr16gwePDif+9znNnlSAAAAAGzdNts1pRo0aJBhw4ZlzJgxm2uTAAAAAGylNuuFzl977bWsXLlyc24SAAAAgK3QRn19b9iwYXXul0qlzJs3L4888kgGDhy4WSYGAAAAwNZro6LU888/X+d+gwYNsv322+faa6/9yF/mAwAAAICNilJPPfXU5p4HAAAAAJ8iGxWl1njrrbcye/bsJMnuu++e7bfffrNMCgAAAICt20Zd6Py9997LGWeckR122CEHH3xwDj744HTo0CGDBg3K+++/v7nnCAAAAMBWZqOi1LBhwzJ58uQ89NBDWbhwYRYuXJhf/epXmTx5cs4///zNPUcAAAAAtjIb9fW9//qv/8ovf/nLHHLIIeVlRx11VJo2bZoTTzwxN9988+aaHwAAAABboY36pNT777+f6urqtZa3a9fO1/cAAAAA+EgbFaVqampy2WWXZenSpeVl//jHPzJy5MjU1NRstskBAAAAsHXaqK/vXX/99TniiCOy4447pkePHkmSF198MZWVlXniiSc26wQBAAAA2PpsVJTq1q1bXnnlldx5553585//nCQ55ZRTMmDAgDRt2nSzThAAAACArc9GRanRo0enuro6Z555Zp3lP/nJT/LWW29l+PDhm2VyAAAAAGydNuqaUrfeemv22GOPtZbvueeeueWWWzZ5UgAAAABs3TYqStXW1maHHXZYa/n222+fefPmbfKkAAAAANi6bVSU6tixY6ZMmbLW8ilTpqRDhw6bPCkAAAAAtm4bdU2pM888M9/97nezYsWK9OrVK0kyceLEXHTRRTn//PM36wQBAAAA2PpsVJS68MIL8/bbb+fss8/O8uXLkyRNmjTJ8OHDM2LEiM06QQAAAAC2PhsVpSoqKvKDH/wgl1xySWbNmpWmTZtm1113TWVl5eaeHwAAAABboY2KUmu0aNEi+++//+aaCwAAAACfEht1oXMAAAAA2BSiFAAAAACFE6UAAAAAKJwoBQAAAEDhRCkAAAAACidKAQAAAFA4UQoAAACAwolSAAAAABROlAIAAACgcKIUAAAAAIUTpQAAAAAonCgFAAAAQOFEKQAAAAAKJ0oBAAAAUDhRCgAAAIDCiVIAAAAAFE6UAgAAAKBwohQAAAAAhROlAAAAACicKAUAAABA4UQpAAAAAAonSgEAAABQOFEKAAAAgMKJUgAAAAAUTpQCAAAAoHCiFAAAAACFE6UAAAAAKJwoBQAAAEDhRCkAAAAACidKAQAAAFA4UQoAAACAwolSAAAAABROlAIAAACgcKIUAAAAAIUTpQAAAAAonCgFAAAAQOFEKQAAAAAKV69RavTo0dl///3TsmXLtGvXLscdd1xmz55dZ8zSpUszZMiQtG3bNi1atEj//v0zf/78OmPmzJmTo48+Os2aNUu7du1y4YUXZuXKlUUeCgAAAAAboF6j1OTJkzNkyJBMmzYtEyZMyIoVK3L44YfnvffeK48577zz8tBDD+W+++7L5MmT8+abb6Zfv37l9atWrcrRRx+d5cuX55lnnslPf/rTjB8/Ppdeeml9HBIAAAAAH0Oj+tz5Y489Vuf++PHj065du8yYMSMH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CidKAQAAAFA4UQoAAACAwm01UWrs2LH57Gc/myZNmuSAAw7Is88+W99TAgAAAGA9tooode+992bYsGG57LLL8oc//CE9evRInz59smDBgvqeGgAAAADrsFVEqeuuuy5nnnlmvvGNb6Rr16655ZZb0qxZs/zkJz+p76kBAAAAsA7/9lFq+fLlmTFjRnr37l1e1qBBg/Tu3TtTp06tx5kBAAAAsD6N6nsCm+p//ud/smrVqlRXV9dZXl1dnT//+c/rfMyyZcuybNmy8v1FixYlSRYvXrzZ57dq2T82+zahaJ/Ec+OT9u7SVfU9Bdhk/47PvZX/WFnfU4BN9u/43Htvpece//7+3Z57/1j2fn1PATaLT+K5t2abpVLpQ8f920epjTF69OiMHDlyreUdO3ash9nAlq/Vjd+u7ynAp9PoVvU9A/hUajXccw/qRSvPPagPF4395Lb97rvvptWHPLf/7aPUdtttl4YNG2b+/Pl1ls+fPz/t27df52NGjBiRYcOGle+vXr0677zzTtq2bZuKiopPdL5sXosXL07Hjh0zd+7cVFVV1fd04FPDcw/qh+ce1A/PPagfnnv/vkqlUt5999106NDhQ8f920epxo0bZ999983EiRNz3HHHJflnZJo4cWKGDh26zsdUVlamsrKyzrLWrVt/wjPlk1RVVeU/UlAPPPegfnjuQf3w3IP64bn37+nDPiG1xr99lEqSYcOGZeDAgdlvv/3yhS98Iddff33ee++9fOMb36jvqQEAAACwDltFlDrppJPy1ltv5dJLL01tbW322muvPPbYY2td/BwAAACALcNWEaWSZOjQoev9uh5br8rKylx22WVrfR0T+GR57kH98NyD+uG5B/XDc2/rV1H6qN/nAwAAAIDNrEF9TwAAAACATx9RCgAAAIDCiVJssSoqKvLggw/W9zTg387pp5+e4447rr6nsU7jx49P69atN9v2PvvZz+b666/fbNuD+rAlP2eBj2fSpEmpqKjIwoUL1ztmc58Dgc3L68r6IUpRiNNPPz0VFRVr3Y444oj6nhpscdb1XPng7fLLL6/vKW4xnnvuuZx11ln1PQ22Es5VsPWqra3NOeeck5133jmVlZXp2LFj+vbtm4kTJ26W7R900EGZN29eWrVqtVm2B/Xhg+fBxo0bZ5dddsmoUaOycuXK+p5aIbyurB9bza/vseU74ogjMm7cuDrL/IoCrG3evHnlP99777259NJLM3v27PKyFi1aFD6nUqmUVatWpVGjLeu0sf3229f3FNjKOFfB1ueNN95Iz54907p16/zwhz9Mt27dsmLFijz++OMZMmRI/vznP2/yPho3bpz27dtvhtlC/VpzHly2bFkeffTRDBkyJNtss01GjBhR31P7xHldWT98UorCVFZWpn379nVu2267bZLklVdeycEHH5wmTZqka9eumTBhwlqPnzt3bk488cS0bt06bdq0ybHHHps33nijvH7N1x+uuuqqVFdXp3Xr1uWyf+GFF6ZNmzbZcccd13qzMXz48Oy2225p1qxZdt5551xyySVZsWLFJ/p3AR/mg8+RVq1apaKionz/lltuyRe/+MU646+//vp89rOfXWs7I0eOzPbbb5+qqqp8+9vfzvLly8vrVq9endGjR2ennXZK06ZN06NHj/zyl78sr1/zNYRf//rX2XfffVNZWZnf/e53Wb16da6++urssssuqaysTKdOnXLllVfWecwHv7rwwgsvpKKios5z9V/dfPPN+dznPpfGjRtn9913z89//vPyulKplMsvvzydOnVKZWVlOnTokHPPPbe8/oMfs/6osfBxfNi5qqKiIrfeemuOOeaYNGvWLF26dMnUqVPz6quv5pBDDknz5s1z0EEH5bXXXitv7/LLL89ee+2VW2+9NR07dkyzZs1y4oknZtGiRWvt+5prrskOO+yQtm3bZsiQIeVz0ahRo/L5z39+rfF77bVXLrnkkiT/fP594QtfSPPmzdO6dev07Nkzf/3rX8tjf/WrX2WfffZJkyZNsvPOO2fkyJF1/uV7Y47ttddey7HHHpvq6uq0aNEi+++/f5588slN/F8ANr+zzz47FRUVefbZZ9O/f//stttu2XPPPTNs2LBMmzYtSTJnzpwce+yxadGiRaqqqnLiiSdm/vz5SZK//OUvqaioWCtejRkzJp/73OeSrPscOH78+HTq1CnNmjXL1772tbz99tvFHDBsgjXnwc6dO2fw4MHp3bt3/s//+T/l91rrO1clybJly3LBBRfkM5/5TJo3b54DDjggkyZNKq9fc078oH99Hbux7+leeuml9OrVK02bNk3btm1z1llnZcmSJWtt98Pm/69f37vuuuvSrVu3NG/ePB07dszZZ59dZ5tsHqIU9W716tXp169fGjdunOnTp+eWW27J8OHD64xZsWJF+vTpk5YtW+a3v/1tpkyZkhYtWuSII46o80b7N7/5Td588808/fTTue6663LZZZflmGOOybbbbpvp06fn29/+dr71rW/lb3/7W/kxLVu2zPjx4zNz5szccMMNuf322zNmzJjCjh8+CRMnTsysWbMyadKk3H333bn//vszcuTI8vrRo0fnZz/7WW655Za8/PLLOe+88/K//tf/yuTJk+ts5//7//6/fP/738+sWbPSvXv3jBgxIt///vdzySWXZObMmbnrrrtSXV290fN84IEH8p3vfCfnn39+/vSnP+Vb3/pWvvGNb+Spp55KkvzXf/1XxowZk1tvvTWvvPJKHnzwwXTr1m2d29qQsbCxrrjiipx22ml54YUXsscee+TrX/96vvWtb2XEiBH5/e9/n1KplKFDh9Z5zKuvvppf/OIXeeihh/LYY4/l+eefz9lnn11nzFNPPZXXXnstTz31VH76059m/PjxGT9+fJLkjDPOyKxZs/Lcc8+Vxz///PP54x//mG984xtZuXJljjvuuHz5y1/OH//4x0ydOjVnnXVWKioqkiS//e1vc9ppp+U73/lOZs6cmVtvvTXjx48vB+WNPbYlS5bkqKOOysSJE/P888/niCOOSN++fTNnzpzN+VcOm+Sdd97JY489liFDhqR58+ZrrW/dunVWr16dY489Nu+8804mT56cCRMm5L//+79z0kknJUl222237LfffrnzzjvrPPbOO+/M17/+9XXud/r06Rk0aFCGDh2aF154IYceemi+973vbf4DhE9Y06ZNy++3PuxclSRDhw7N1KlTc8899+SPf/xjTjjhhBxxxBF55ZVXNmifG/qe7r333kufPn2y7bbb5rnnnst9992XJ598cq3z8UfN/181aNAgP/rRj/Lyyy/npz/9aX7zm9/koosu2qBj4WMoQQEGDhxYatiwYal58+Z1bldeeWXp8ccfLzVq1Kj0f//v/y2P//Wvf11KUnrggQdKpVKp9POf/7y0++67l1avXl0es2zZslLTpk1Ljz/+eHkfnTt3Lq1atao8Zvfddy996UtfKt9fuXJlqXnz5qW77757vXP94Q9/WNp3330316HDJhk3blypVatW5fuXXXZZqUePHnXGjBkzptS5c+fy/YEDB5batGlTeu+998rLbr755lKLFi1Kq1atKi1durTUrFmz0jPPPFNnO4MGDSqdcsoppVKpVHrqqadKSUoPPvhgef3ixYtLlZWVpdtvv32dc13zmL///e/lZc8//3wpSen1119f5/EcdNBBpTPPPLPOdk444YTSUUcdVSqVSqVrr722tNtuu5WWL1++zn127ty5NGbMmI81Fj7Kh52rSqVSKUnp4osvLo+fOnVqKUnpjjvuKC+7++67S02aNCnfv+yyy0oNGzYs/e1vfysv+/Wvf11q0KBBad68eeX9du7cubRy5crymBNOOKF00kknle8feeSRpcGDB5fvn3POOaVDDjmkVCqVSm+//XYpSWnSpEnrPK7DDjusdNVVV9VZ9vOf/7y0ww47lO9vzLGty5577lm68cYbP3QMFGn69OmlJKX7779/vWOeeOKJUsOGDUtz5swpL3v55ZdLSUrPPvtsqVT657n2c5/7XHn97NmzS0lKs2bNKpVKa58DTznllPK5bI2TTjqpzjkQtjQDBw4sHXvssaVSqVRavXp1acKECaXKysrSBRdc8JHnqr/+9a+lhg0b1nlPVyr98xw0YsSIUqn08V/Hbuh7uttuu6207bbblpYsWVIe88gjj5QaNGhQqq2trbPdDzvXfvB15brcd999pbZt2653PRvHJ6UozKGHHpoXXnihzu3b3/52Zs2alY4dO6ZDhw7lsTU1NXUe++KLL+bVV19Ny5Yt06JFi7Ro0SJt2rTJ0qVL63yVYM8990yDBv/v/9bV1dV1PinRsGHDtG3bNgsWLCgvu/fee9OzZ8+0b98+LVq0yMUXX+xfefm316NHjzRr1qx8v6amJkuWLMncuXPz6quv5v33389XvvKV8vOpRYsW+dnPflbn+ZQk++23X/nPs2bNyrJly3LYYYdttnnOmjUrPXv2rLOsZ8+emTVrVpLkhBNOyD/+8Y/svPPOOfPMM/PAAw+s92KbGzIW1md956o1unfvXv7zmk8JfvA8U11dnaVLl2bx4sXlZZ06dcpnPvOZ8v2ampqsXr26zrXi9txzzzRs2LB8f4cddqhzrjrzzDNz9913Z+nSpVm+fHnuuuuunHHGGUmSNm3a5PTTT0+fPn3St2/f3HDDDXWuTffiiy9m1KhRdZ7vZ555ZubNm5f3339/o49tyZIlueCCC9KlS5e0bt06LVq0yKxZs5xD2aKUSqWPHLPmtWjHjh3Ly7p27ZrWrVuXz0cnn3xy3njjjfLX/e68887ss88+2WOPPda7zQMOOKDOsn99fQtboocffjgtWrRIkyZNcuSRR+akk04q/8jOh52rXnrppaxatSq77bZbnfPN5MmT13p9+VE29D3drFmz0qNHjzqfhuzZs+cGn2v/1ZNPPpnDDjssn/nMZ9KyZcuceuqpefvtt+ucO9l0W9YVa9mqNW/ePLvssstGPXbJkiXZd9991/rYdFL3gnTbbLNNnXUVFRXrXLZ69eokydSpUzNgwICMHDkyffr0SatWrXLPPffk2muv3ah5wietQYMGa73A3tBroK35LvwjjzxS541ysvYFnT94cm/atOlHzi2p+wZgU6/P1rFjx8yePTtPPvlkJkyYkLPPPjs//OEPM3ny5LWe2xsyFtbno85VH/z/0pqvx61r2ZrzzMf1YeeqJOnbt28qKyvzwAMPpHHjxlmxYkWOP/748vpx48bl3HPPzWOPPZZ77703F198cSZMmJADDzwwS5YsyciRI9OvX7+19tukSZONPrYLLrggEyZMyDXXXJNddtklTZs2zfHHH1/na/VQ33bdddd1Xg9qQ7Vv3z69evXKXXfdlQMPPDB33XVXBg8evJlmCVuOQw89NDfffHMaN26cDh061PmRmw87Vy1ZsiQNGzbMjBkz6oSf5P/9SM/HfR27oe/pPq4N2cYbb7yRY445JoMHD86VV16ZNm3a5He/+10GDRqU5cuX1/nHXzaNKEW969KlS+bOnZt58+Zlhx12SJLyv0Ktsc8+++Tee+9Nu3btUlVVtdn2/cwzz6Rz5875j//4j/KyD14YFrY022+/fWpra1MqlcpvEF944YW1xr344ov5xz/+UQ5J06ZNS4sWLdKxY8e0adMmlZWVmTNnTr785S9/7H3vuuuuadq0aSZOnJhvfvOb65xb8s9fD1xzYeh1ze2DunTpkilTpmTgwIHlZVOmTEnXrl3L95s2bZq+ffumb9++GTJkSPbYY4+89NJL2Weffdba3oaMhaLMmTMnb775ZvkTwdOmTUuDBg2y++67f+xtNGrUKAMHDsy4cePSuHHjnHzyyWuF4r333jt77713RowYkZqamvKb53322SezZ8/e6H8YWp8pU6bk9NNPz9e+9rUk/3xD8mE/agD1oU2bNunTp0/Gjh2bc889d63rSi1cuLD8WnTu3LnlT0vNnDkzCxcurHM+GjBgQC666KKccsop+e///u+cfPLJ691vly5dMn369DrL/vX1LWyJNvaDBHvvvXdWrVqVBQsW5Etf+tI6x3zc17EbqkuXLhk/fnzee++98nN8ypQpG3yu/aAZM2Zk9erVufbaa8v/8PqLX/xik+fK2kQpCrNs2bLU1tbWWdaoUaP07t07u+22WwYOHJgf/vCHWbx4cZ1IlPzzRcAPf/jDHHvssRk1alR23HHH/PWvf83999+fiy66KDvuuONGzWnXXXfNnDlzcs8992T//ffPI488kgceeGCjjxE+aYccckjeeuutXH311Tn++OPz2GOP5de//vVasXb58uUZNGhQLr744rzxxhu57LLLMnTo0DRo0CAtW7bMBRdckPPOOy+rV6/OF7/4xSxatChTpkxJVVVVnUD0QU2aNMnw4cNz0UUXpXHjxunZs2feeuutvPzyyxk0aFB22WWXdOzYMZdffnmuvPLK/OUvf/nITx1eeOGFOfHEE7P33nund+/eeeihh3L//feXf8Fr/PjxWbVqVQ444IA0a9Ys//mf/5mmTZumc+fOa21rQ8bC+qzvXLXddttt9DabNGmSgQMH5pprrsnixYtz7rnn5sQTT9zgn4//5je/mS5duiT554vtNV5//fXcdttt+epXv5oOHTpk9uzZeeWVV3LaaaclSS699NIcc8wx6dSpU44//vg0aNAgL774Yv70pz9t0oWXd91119x///3p27dvKioqcskll2zwv1pDEcaOHZuePXvmC1/4QkaNGpXu3btn5cqVmTBhQm6++ebMnDkz3bp1y4ABA3L99ddn5cqVOfvss/PlL3+5ztfY+/Xrl8GDB2fw4ME59NBD61x64l+de+656dmzZ6655poce+yxefzxx/PYY48VcbhQL3bbbbcMGDAgp512Wq699trsvffeeeuttzJx4sR07949Rx999Md+HbuhBgwYkMsuuywDBw7M5ZdfnrfeeivnnHNOTj311I3+QZ5ddtklK1asyI033pi+fftmypQpueWWWzZpnqyba0pRmMceeyw77LBDndsXv/jFNGjQIA888ED+8Y9/5Atf+EK++c1vrvWLQM2aNcvTTz+dTp06pV+/funSpUsGDRqUpUuXbtJ/xL761a/mvPPOy9ChQ7PXXnvlmWeeKf+8NmyJunTpkptuuiljx45Njx498uyzz+aCCy5Ya9xhhx2WXXfdNQcffHBOOumkfPWrXy1fDyD5569sXXLJJRk9enS6dOmSI444Io888kh22mmnD93/JZdckvPPPz+XXnppunTpkpNOOqn8Xfxtttkmd999d/785z+ne/fu+cEPfvCRb3iPO+643HDDDbnmmmuy55575tZbb824ceNyyCGHJPnnryLdfvvt6dmzZ7p3754nn3wyDz30UNq2bbvWtjZkLKzP+s5Vm2KXXXZJv379ctRRR+Xwww9P9+7dc9NNN23wdnbdddccdNBB2WOPPepcq6ZZs2b585//XP6p+7POOitDhgzJt771rSRJnz598vDDD+eJJ57I/vvvnwMPPDBjxozZ5GB73XXXZdttt81BBx2Uvn37pk+fPj6VyBZp5513zh/+8IcceuihOf/88/P5z38+X/nKVzJx4sTcfPPNqaioyK9+9atsu+22Ofjgg9O7d+/svPPOuffee+tsp2XLlunbt29efPHFDBgw4EP3eeCBB+b222/PDTfckB49euSJJ57IxRdf/EkeJtS7cePG5bTTTsv555+f3XffPccdd1yee+65dOrUKcnHfx27oZo1a5bHH38877zzTvbff/8cf/zxOeyww/LjH/94o7fZo0ePXHfddfnBD36Qz3/+87nzzjszevToTZ4ra6sofZyr/wEAsMEuv/zyPPjgg5vl6wmlUim77rprzj777AwbNmzTJwcAUM98fQ8AYAv31ltv5Z577kltbW2+8Y1v1Pd0AAA2C1EKAGAL165du2y33Xa57bbbyj8kAADw787X9wAAAAAonAudAwAAAFA4UQoAAACAwolSAAAAABROlAIAAACgcKIUAAAAAIUTpQAAkhxyyCH57ne/u0nbeOONN1JRUZEXXnghSTJp0qRUVFRk4cKFmzy/T1pFRUUefPDBTdrG6aefnuOOO26zzAcA2PqJUgDAp8bpp5+eioqKtW6vvvpq7r///lxxxRWbdX8HHXRQ5s2bl1atWm3W7f6rf6f4BQCwRqP6ngAAQJGOOOKIjBs3rs6y7bffPg0bNtzs+2rcuHHat2+/2bcLALA18EkpAOBTpbKyMu3bt69za9iw4Vpf3/vsZz+bq666KmeccUZatmyZTp065bbbbquzrWeffTZ77713mjRpkv322y/PP/98nfX/+gmm8ePHp3Xr1nn88cfTpUuXtGjRIkcccUTmzZtXfszKlStz7rnnpnXr1mnbtm2GDx+egQMHbtLX4p577rl85StfyXbbbZdWrVrly1/+cv7whz+sNW7evHk58sgj07Rp0+y888755S9/WWf93Llzc+KJJ6Z169Zp06ZNjj322Lzxxhvr3e8vf/nLdOvWLU2bNk3btm3Tu3fvvPfeext9HADA1kWUAgBYj2uvvbYcm84+++wMHjw4s2fPTpIsWbIkxxxzTLp27ZoZM2bk8ssvzwUXXPCR23z//fdzzTXX5Oc//3mefvrpzJkzp87jfvCDH+TOO+/MuHHjMmXKlCxevHiTr/X07rvvZuDAgfnd736XadOmZdddd81RRx2Vd999t864Sy65JP3798+LL76YAQMG5OSTT86sWbOSJCtWrEifPn3SsmXL/Pa3v82UKVPKUW358uVr7XPevHk55ZRTcsYZZ2TWrFmZNGlS+vXrl1KptEnHAgBsPXx9DwD4VHn44YfTokWL8v0jjzwy99133zrHHnXUUTn77LOTJMOHD8+YMWPy1FNPZffdd89dd92V1atX54477kiTJk2y55575m9/+1sGDx78oftfsWJFbrnllnzuc59LkgwdOjSjRo0qr7/xxhszYsSIfO1rX0uS/PjHP86jjz66Scfcq1evOvdvu+22tG7dOpMnT84xxxxTXn7CCSfkm9/8ZpLkiiuuyIQJE3LjjTfmpptuyr333pvVq1fnf//v/52Kiookybhx49K6detMmjQphx9+eJ19zJs3LytXrky/fv3SuXPnJEm3bt026TgAgK2LKAUAfKoceuihufnmm8v3mzdvvt6x3bt3L/+5oqIi7du3z4IFC5Iks2bNSvfu3dOkSZPymJqamo/cf7NmzcpBKkl22GGH8jYXLVqU+fPn5wtf+EJ5fcOGDbPvvvtm9erVH+Po1m3+/Pm5+OKLM2nSpCxYsCCrVq3K+++/nzlz5tQZ96/zr6mpKf+S4IsvvphXX301LVu2rDNm6dKlee2119baZ48ePXLYYYelW7du6dOnTw4//PAcf/zx2XbbbTf6OACArYsoBQB8qjRv3jy77LLLxxq7zTbb1LlfUVGxSXFofdv8pL/SNnDgwLz99tu54YYb0rlz51RWVqampmadX7tbnyVLlmTffffNnXfeuda67bfffq1lDRs2zIQJE/LMM8/kiSeeyI033pj/+I//yPTp07PTTjtt0vEAAFsH15QCANgIXbp0yR//+McsXbq0vGzatGmbtM1WrVqluro6zz33XHnZqlWr1nlR8g0xZcqUnHvuuTnqqKOy5557prKyMv/zP/+z1rh/nf+0adPSpUuXJMk+++yTV155Je3atcsuu+xS59aqVat17reioiI9e/bMyJEj8/zzz6dx48Z54IEHNulYAICthygFALARvv71r6eioiJnnnlmZs6cmUcffTTXXHPNJm/3nHPOyejRo/OrX/0qs2fPzne+8538/e9/L1/H6cO89NJLeeGFF8q3F198MUmy66675uc//3lmzZqV6dOnZ8CAAWnatOlaj7/vvvvyk5/8JH/5y19y2WWX5dlnn83QoUOTJAMGDMh2222XY489Nr/97W/z+uuvZ9KkSTn33HPzt7/9ba1tTZ8+PVdddVV+//vfZ86cObn//vvz1ltvlSMXAICv7wEAbIQWLVrkoYceyre//e3svffe6dq1a37wgx+kf//+m7Td4cOHp7a2NqeddloaNmyYs846K3369EnDhg0/8rEHH3xwnfsNGzbMypUrc8cdd+Sss87KPvvsk44dO+aqq65a5y8Fjhw5Mvfcc0/OPvvs7LDDDrn77rvTtWvXJP+8FtbTTz+d4cOHp1+/fnn33Xfzmc98JocddliqqqrW2lZVVVWefvrpXH/99Vm8eHE6d+6ca6+9NkceeeRG/s0AAFubipLf5QUA2GKtXr06Xbp0yYknnpgrrriivqcDALDZ+KQUAMAW5K9//WueeOKJfPnLX86yZcvy4x//OK+//nq+/vWv1/fUAAA2K9eUAgDYgjRo0CDjx4/P/vvvn549e+all17Kk08+6VpMAMBWx9f3AAAAACicT0oBAAAAUDhRCgAAAIDCiVIAAAAAFE6UAgAAAKBwohQAAAAAhROlAAAAACicKAUAAABA4UQpAAAAAAonSgEAAABQuP8fQzI9np7zAdsAAAAASUVORK5CYII=",
+      "text/plain": [
+       "<Figure size 1200x600 with 1 Axes>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "plt.figure(figsize=(12,6))\n",
+    "\n",
+    "sns.countplot(x=df['Finding Labels'])\n",
+    "\n",
+    "plt.tight_layout()\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "01d1c3b6",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:12:04.644028Z",
+     "iopub.status.busy": "2024-08-15T03:12:04.642995Z",
+     "iopub.status.idle": "2024-08-15T03:12:04.648258Z",
+     "shell.execute_reply": "2024-08-15T03:12:04.647031Z"
+    },
+    "papermill": {
+     "duration": 0.015432,
+     "end_time": "2024-08-15T03:12:04.650560",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:04.635128",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import shutil"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "4bd6dfd1",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:12:04.665550Z",
+     "iopub.status.busy": "2024-08-15T03:12:04.665138Z",
+     "iopub.status.idle": "2024-08-15T03:12:04.692515Z",
+     "shell.execute_reply": "2024-08-15T03:12:04.691286Z"
+    },
+    "papermill": {
+     "duration": 0.038086,
+     "end_time": "2024-08-15T03:12:04.695298",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:04.657212",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Image Index</th>\n",
+       "      <th>Finding Labels</th>\n",
+       "      <th>Follow-up #</th>\n",
+       "      <th>Patient ID</th>\n",
+       "      <th>Patient Age</th>\n",
+       "      <th>Patient Gender</th>\n",
+       "      <th>View Position</th>\n",
+       "      <th>OriginalImage[Width</th>\n",
+       "      <th>Height]</th>\n",
+       "      <th>OriginalImagePixelSpacing[x</th>\n",
+       "      <th>y]</th>\n",
+       "      <th>path</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>00026971_005.png</td>\n",
+       "      <td>Edema</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>26971.0</td>\n",
+       "      <td>44.0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>AP</td>\n",
+       "      <td>3056.0</td>\n",
+       "      <td>2544.0</td>\n",
+       "      <td>0.139</td>\n",
+       "      <td>0.139</td>\n",
+       "      <td>/kaggle/input/data/images_011/images/00026971_...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>00027415_012.png</td>\n",
+       "      <td>Edema</td>\n",
+       "      <td>12.0</td>\n",
+       "      <td>27415.0</td>\n",
+       "      <td>23.0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>AP</td>\n",
+       "      <td>3056.0</td>\n",
+       "      <td>2544.0</td>\n",
+       "      <td>0.139</td>\n",
+       "      <td>0.139</td>\n",
+       "      <td>/kaggle/input/data/images_011/images/00027415_...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>00023310_005.png</td>\n",
+       "      <td>Edema</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>23310.0</td>\n",
+       "      <td>42.0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>AP</td>\n",
+       "      <td>3056.0</td>\n",
+       "      <td>2544.0</td>\n",
+       "      <td>0.139</td>\n",
+       "      <td>0.139</td>\n",
+       "      <td>/kaggle/input/data/images_010/images/00023310_...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>00011985_005.png</td>\n",
+       "      <td>Edema</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>11985.0</td>\n",
+       "      <td>54.0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>AP</td>\n",
+       "      <td>2500.0</td>\n",
+       "      <td>2048.0</td>\n",
+       "      <td>0.168</td>\n",
+       "      <td>0.168</td>\n",
+       "      <td>/kaggle/input/data/images_006/images/00011985_...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>00018972_049.png</td>\n",
+       "      <td>Edema</td>\n",
+       "      <td>49.0</td>\n",
+       "      <td>18972.0</td>\n",
+       "      <td>52.0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>AP</td>\n",
+       "      <td>2500.0</td>\n",
+       "      <td>2048.0</td>\n",
+       "      <td>0.168</td>\n",
+       "      <td>0.168</td>\n",
+       "      <td>/kaggle/input/data/images_009/images/00018972_...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2495</th>\n",
+       "      <td>person95_virus_177.jpeg</td>\n",
+       "      <td>Pneumonia</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>/kaggle/input/chest-xray-pneumonia/chest_xray/...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2496</th>\n",
+       "      <td>00003640_004.png</td>\n",
+       "      <td>Pneumonia</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>3640.0</td>\n",
+       "      <td>45.0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>PA</td>\n",
+       "      <td>2992.0</td>\n",
+       "      <td>2991.0</td>\n",
+       "      <td>0.143</td>\n",
+       "      <td>0.143</td>\n",
+       "      <td>/kaggle/input/data/images_002/images/00003640_...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2497</th>\n",
+       "      <td>person125_virus_254.jpeg</td>\n",
+       "      <td>Pneumonia</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>/kaggle/input/chest-xray-pneumonia/chest_xray/...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2498</th>\n",
+       "      <td>person688_virus_1281.jpeg</td>\n",
+       "      <td>Pneumonia</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>/kaggle/input/chest-xray-pneumonia/chest_xray/...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2499</th>\n",
+       "      <td>person592_bacteria_2434.jpeg</td>\n",
+       "      <td>Pneumonia</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>/kaggle/input/chest-xray-pneumonia/chest_xray/...</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>2500 rows × 12 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                       Image Index Finding Labels  Follow-up #  Patient ID  \\\n",
+       "0                 00026971_005.png          Edema          5.0     26971.0   \n",
+       "1                 00027415_012.png          Edema         12.0     27415.0   \n",
+       "2                 00023310_005.png          Edema          5.0     23310.0   \n",
+       "3                 00011985_005.png          Edema          5.0     11985.0   \n",
+       "4                 00018972_049.png          Edema         49.0     18972.0   \n",
+       "...                            ...            ...          ...         ...   \n",
+       "2495       person95_virus_177.jpeg      Pneumonia          NaN         NaN   \n",
+       "2496              00003640_004.png      Pneumonia          4.0      3640.0   \n",
+       "2497      person125_virus_254.jpeg      Pneumonia          NaN         NaN   \n",
+       "2498     person688_virus_1281.jpeg      Pneumonia          NaN         NaN   \n",
+       "2499  person592_bacteria_2434.jpeg      Pneumonia          NaN         NaN   \n",
+       "\n",
+       "      Patient Age Patient Gender View Position  OriginalImage[Width  Height]  \\\n",
+       "0            44.0              M            AP               3056.0   2544.0   \n",
+       "1            23.0              M            AP               3056.0   2544.0   \n",
+       "2            42.0              F            AP               3056.0   2544.0   \n",
+       "3            54.0              F            AP               2500.0   2048.0   \n",
+       "4            52.0              F            AP               2500.0   2048.0   \n",
+       "...           ...            ...           ...                  ...      ...   \n",
+       "2495          NaN            NaN           NaN                  NaN      NaN   \n",
+       "2496         45.0              M            PA               2992.0   2991.0   \n",
+       "2497          NaN            NaN           NaN                  NaN      NaN   \n",
+       "2498          NaN            NaN           NaN                  NaN      NaN   \n",
+       "2499          NaN            NaN           NaN                  NaN      NaN   \n",
+       "\n",
+       "      OriginalImagePixelSpacing[x     y]  \\\n",
+       "0                           0.139  0.139   \n",
+       "1                           0.139  0.139   \n",
+       "2                           0.139  0.139   \n",
+       "3                           0.168  0.168   \n",
+       "4                           0.168  0.168   \n",
+       "...                           ...    ...   \n",
+       "2495                          NaN    NaN   \n",
+       "2496                        0.143  0.143   \n",
+       "2497                          NaN    NaN   \n",
+       "2498                          NaN    NaN   \n",
+       "2499                          NaN    NaN   \n",
+       "\n",
+       "                                                   path  \n",
+       "0     /kaggle/input/data/images_011/images/00026971_...  \n",
+       "1     /kaggle/input/data/images_011/images/00027415_...  \n",
+       "2     /kaggle/input/data/images_010/images/00023310_...  \n",
+       "3     /kaggle/input/data/images_006/images/00011985_...  \n",
+       "4     /kaggle/input/data/images_009/images/00018972_...  \n",
+       "...                                                 ...  \n",
+       "2495  /kaggle/input/chest-xray-pneumonia/chest_xray/...  \n",
+       "2496  /kaggle/input/data/images_002/images/00003640_...  \n",
+       "2497  /kaggle/input/chest-xray-pneumonia/chest_xray/...  \n",
+       "2498  /kaggle/input/chest-xray-pneumonia/chest_xray/...  \n",
+       "2499  /kaggle/input/chest-xray-pneumonia/chest_xray/...  \n",
+       "\n",
+       "[2500 rows x 12 columns]"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "60e646ee",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:12:04.711354Z",
+     "iopub.status.busy": "2024-08-15T03:12:04.710909Z",
+     "iopub.status.idle": "2024-08-15T03:12:04.752024Z",
+     "shell.execute_reply": "2024-08-15T03:12:04.750853Z"
+    },
+    "papermill": {
+     "duration": 0.052345,
+     "end_time": "2024-08-15T03:12:04.754850",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:04.702505",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df.to_csv('metadata.csv', index=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "f38b98f5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-08-15T03:12:04.770965Z",
+     "iopub.status.busy": "2024-08-15T03:12:04.770535Z",
+     "iopub.status.idle": "2024-08-15T03:12:31.113809Z",
+     "shell.execute_reply": "2024-08-15T03:12:31.112462Z"
+    },
+    "papermill": {
+     "duration": 26.354967,
+     "end_time": "2024-08-15T03:12:31.117013",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:04.762046",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "100%|██████████| 500/500 [00:05<00:00, 93.21it/s]\n",
+      "100%|██████████| 500/500 [00:03<00:00, 149.07it/s]\n",
+      "100%|██████████| 500/500 [00:05<00:00, 89.53it/s]\n",
+      "100%|██████████| 500/500 [00:07<00:00, 62.86it/s]\n",
+      "100%|██████████| 500/500 [00:04<00:00, 123.62it/s]\n"
+     ]
+    }
+   ],
+   "source": [
+    "PATH = '/kaggle/working/Bbox/'\n",
+    "\n",
+    "for label in df['Finding Labels'].unique():\n",
+    "    os.makedirs(os.path.join(PATH,label), exist_ok=True)\n",
+    "    \n",
+    "    tmp = df[df['Finding Labels'] == label].reset_index(drop=True)\n",
+    "    \n",
+    "    for file in tqdm(tmp['path'].unique()):\n",
+    "        shutil.copy(file, os.path.join(PATH,label))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "41e6cf96",
+   "metadata": {
+    "papermill": {
+     "duration": 0.030553,
+     "end_time": "2024-08-15T03:12:31.177627",
+     "exception": false,
+     "start_time": "2024-08-15T03:12:31.147074",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "datasetId": 5839,
+     "sourceId": 18613,
+     "sourceType": "datasetVersion"
+    },
+    {
+     "datasetId": 17810,
+     "sourceId": 23812,
+     "sourceType": "datasetVersion"
+    },
+    {
+     "datasetId": 891819,
+     "sourceId": 2332307,
+     "sourceType": "datasetVersion"
+    },
+    {
+     "datasetId": 1592399,
+     "sourceId": 2619910,
+     "sourceType": "datasetVersion"
+    }
+   ],
+   "dockerImageVersionId": 30732,
+   "isGpuEnabled": false,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.13"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 41.029462,
+   "end_time": "2024-08-15T03:12:31.828799",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2024-08-15T03:11:50.799337",
+   "version": "2.5.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
