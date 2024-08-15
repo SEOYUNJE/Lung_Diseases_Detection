@@ -56,7 +56,8 @@ There are 9classes(8 diseases, and one for "No Findings")
 ![box2](https://github.com/user-attachments/assets/f7d37c96-2f55-4140-a21c-6ea1fd474026)
 
 ## Labeling
-![de](https://github.com/user-attachments/assets/83a33f6a-9b26-4ef5-8ef4-3b730ca05b17)
+![image](https://github.com/user-attachments/assets/c88d71bd-7df3-4587-a4b8-96288a8e53b4)
+
 
 
 ## Bbox Dataset 
@@ -67,13 +68,11 @@ There are 9classes(8 diseases, and one for "No Findings")
 - Atelectasis(180)
 - Effusion(153)
 - Cardiomegaly(146)
-- Pneumonia(120)
 
 2. [VinBigData](https://www.kaggle.com/competitions/vinbigdata-chest-xray-abnormalities-detection/data)
 - Atelectasis(279)
 - Effusion(2476)
 - Cardiomegaly(5427)
-- Pneumonia(0)
 
 #### Bbox Dataset X
 
