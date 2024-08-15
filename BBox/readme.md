@@ -29,20 +29,20 @@ So We need to apply Weighted Box Fusion(WBF)
 
 #### => After Choose One Radiologist for each label
 
- - `Atelectasis`: 279 -> 123
+ - `Atelectasis`: 279 -> 186
 
-- `Effusion`: 2476 -> 824
-
-- `Cardiomegaly`: 5427 -> 2113
+- `Effusion`: 2476 -> 1032
+- 
+- `Cardiomegaly`: 5427 -> 2300
 
 
 ___
 
 **Final Dataset**
 
-- `Atelectasis(303)`
+- `Atelectasis(366)`
 
-  => Vin(123) + NIH(180)
+  => Vin(186) + NIH(180)
 
 - `Effusion(500)`
 
