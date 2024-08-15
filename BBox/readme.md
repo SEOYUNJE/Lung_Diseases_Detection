@@ -27,7 +27,7 @@ So We need to apply Weighted Box Fusion(WBF)
 ![image](https://github.com/user-attachments/assets/46ab3a42-c31e-409a-b872-c1a03bd4dbe6)
 
 
-#### => After Fusion BBox
+#### => After Choose One Radiologist for each label
 
  - `Atelectasis`: 279 -> 123
 
